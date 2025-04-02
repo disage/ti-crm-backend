@@ -1,15 +1,28 @@
-import { IsString, IsEmail, IsNotEmpty, IsIn } from 'class-validator';
+import { IsString, IsEmail, IsNotEmpty } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateUserDto {
+  @ApiProperty({
+    example: 'user@example.com',
+    description: 'Email',
+  })
   @IsEmail()
   @IsNotEmpty()
   email: string;
 
+  @ApiProperty({
+    example: 'securePassword123',
+    description: 'Password',
+  })
   @IsString()
   @IsNotEmpty()
   password: string;
 
-  @IsString()
-  @IsIn(['admin', 'user']) // Ограничем роль до admin/user
-  role?: string; // role может быть опциональным
+  // @ApiPropertyOptional({
+  //   example: 'user',
+  //   description: 'Role (admin or user)',
+  // })
+  // @IsString()
+  // @IsIn(['admin', 'user'])
+  // role?: string;
 }

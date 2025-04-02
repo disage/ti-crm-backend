@@ -49,6 +49,19 @@ export class UsersService {
     });
   }
 
+  async findById(userId: string): Promise<User | null> {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+  }
+
+  async updateRefreshToken(userId: string, refreshToken: string | null) {
+    await this.prisma.user.update({
+      where: { id: userId }, // Указываем, какого пользователя обновить
+      data: { refreshToken }, // Передаём новые данные
+    });
+  }
+
   private mapToUserDto(user: User): UserDto {
     return {
       id: user.id,
