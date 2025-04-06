@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { User } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
+
 import { CreateUserDto } from './create-user.dto';
+import { PrismaService } from '../prisma/prisma.service';
 import { UpdateUserDto } from './update-user.dto';
 import { UserDto } from './user.dto';
 
@@ -26,16 +27,27 @@ export class UsersService {
     } as UserDto;
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<UserDto> {
-    const user = await this.prisma.user.update({
+  async remove(id: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    await this.prisma.user.delete({ where: { id } });
+  }
+
+  async update(id: string, dto: UpdateUserDto): Promise<User> {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+
+    return this.prisma.user.update({
       where: { id },
       data: {
-        // Сюда добавьте логику для обновления пароля или других полей по необходимости
-        email: updateUserDto.email,
-        role: updateUserDto.role, // Или любые другие поля, которые нужно обновить
+        name: dto.name,
+        role: dto.role,
       },
     });
-    return this.mapToUserDto(user);
   }
 
   async findAll(): Promise<UserDto[]> {
@@ -68,6 +80,8 @@ export class UsersService {
       email: user.email,
       role: user.role,
       createdAt: user.createdAt,
+      name: user.name || '',
+      imgUrl: user.imgUrl || '',
     };
   }
 }

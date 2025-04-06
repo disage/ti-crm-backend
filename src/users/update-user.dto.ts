@@ -2,15 +2,19 @@ import { IsString, IsEmail, IsOptional, IsIn } from 'class-validator';
 
 export class UpdateUserDto {
   @IsEmail()
-  @IsOptional() // Поле не обязательно для обновления
+  @IsOptional()
   email?: string;
 
   @IsString()
-  @IsOptional() // Поле не обязательно для обновления
+  @IsOptional()
+  name?: string;
+
+  @IsString()
+  @IsOptional()
   password?: string;
 
   @IsString()
-  @IsOptional() // Поле не обязательно для обновления
+  @IsOptional()
   @IsIn(['admin', 'user'])
-  role?: string; // role может быть опциональным
+  role?: string;
 }

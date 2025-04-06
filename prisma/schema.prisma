@@ -14,5 +14,6 @@ model User {
   role         String   @default("user") // admin / user
   createdAt    DateTime @default(now())
   refreshToken String?
-  // name String
+  name         String?
+  imgUrl       String?
 }
