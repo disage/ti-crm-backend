@@ -1,9 +1,11 @@
 import { Controller, Post, Body, Res, Req, HttpCode } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/create-user.dto';
 import { UserDto } from '../users/user.dto';
 import { Response, Request } from 'express';
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -23,7 +25,7 @@ export class AuthController {
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: true, // Использовать true в продакшне с HTTPS
+      secure: true,
       sameSite: 'strict',
     });
 

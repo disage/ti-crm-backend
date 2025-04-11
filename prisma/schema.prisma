@@ -7,13 +7,29 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model Folder {
+  id             String     @id @default(uuid())
+  name           String
+  order          Int
+  ownerId        String     @default("admin-id-12345678")
+  type           FolderType
+  visibleToUsers User[]     @relation("FolderVisibility")
+}
+
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  password     String
-  role         String   @default("user") // admin / user
-  createdAt    DateTime @default(now())
-  refreshToken String?
-  name         String?
-  imgUrl       String?
+  id             String   @id @default(uuid())
+  email          String   @unique
+  password       String
+  role           String   @default("user") // admin / user
+  createdAt      DateTime @default(now())
+  refreshToken   String?
+  name           String?
+  imgUrl         String?
+  foldersVisible Folder[] @relation("FolderVisibility")
+}
+
+enum FolderType {
+  private
+  public
+  shared
 }
