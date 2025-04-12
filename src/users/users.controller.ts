@@ -15,6 +15,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UpdateUserDto } from './update-user.dto';
 import { UserDto } from './user.dto';
 import { UsersService } from './users.service';
+import { CurrentUser } from 'src/auth/current-user.decorator';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -52,5 +53,18 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
   ) {
     return this.usersService.update(id, updateUserDto);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiResponse({
+    status: 200,
+    description: 'Information about the current user',
+    type: UserDto,
+  })
+  async getCurrentUser(
+    @CurrentUser() user: { userId: string },
+  ): Promise<UserDto> {
+    return this.usersService.findOneById(user.userId);
   }
 }

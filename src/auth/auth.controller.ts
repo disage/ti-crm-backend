@@ -1,9 +1,19 @@
-import { Controller, Post, Body, Res, Req, HttpCode } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Res,
+  Req,
+  HttpCode,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/create-user.dto';
 import { UserDto } from '../users/user.dto';
 import { Response, Request } from 'express';
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { CurrentUser } from './current-user.decorator';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -18,7 +28,7 @@ export class AuthController {
   @Post('login')
   @HttpCode(200)
   async login(@Body() createUserDto: CreateUserDto, @Res() res: Response) {
-    const { accessToken, refreshToken } = await this.authService.login(
+    const { accessToken, refreshToken, user } = await this.authService.login(
       createUserDto.email,
       createUserDto.password,
     );
@@ -29,7 +39,16 @@ export class AuthController {
       sameSite: 'strict',
     });
 
-    return res.json({ accessToken });
+    return res.json({
+      accessToken,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        imgUrl: user.imgUrl,
+      },
+    });
   }
 
   @Post('refresh')
@@ -58,8 +77,10 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(200)
-  async logout(@Res() res: Response) {
+  @UseGuards(JwtAuthGuard)
+  logout(@CurrentUser() user: { userId: string }, @Res() res: Response) {
+    this.authService.logout(user.userId);
     res.clearCookie('refreshToken');
-    return res.json({ message: 'Выход выполнен' });
+    return res.json({ message: 'Logout success' });
   }
 }

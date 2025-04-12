@@ -27,6 +27,19 @@ export class BoardService {
   }
 
   async getAvailableFolders(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
+    const isAdmin = user?.role === 'admin';
+
+    if (isAdmin) {
+      return this.prisma.folder.findMany({
+        orderBy: { order: 'asc' },
+      });
+    }
+
     return this.prisma.folder.findMany({
       where: {
         OR: [
@@ -42,9 +55,7 @@ export class BoardService {
           },
         ],
       },
-      orderBy: {
-        order: 'asc',
-      },
+      orderBy: { order: 'asc' },
     });
   }
 

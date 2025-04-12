@@ -73,8 +73,9 @@ export class AuthService {
   async login(
     email: string,
     password: string,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  ): Promise<{ accessToken: string; refreshToken: string; user: any }> {
     const user = await this.usersService.findBy(email);
+
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -86,14 +87,22 @@ export class AuthService {
 
     const { accessToken, refreshToken } = await this.generateTokens(user.id);
 
-    // Сохраняем refresh-токен в базе
     await this.usersService.updateRefreshToken(user.id, refreshToken);
 
-    return { accessToken, refreshToken };
+    return {
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        imgUrl: user.imgUrl,
+      },
+    };
   }
 
   async logout(userId: string) {
-    // Удаляем refresh-токен из базы
     await this.usersService.updateRefreshToken(userId, null);
   }
 }

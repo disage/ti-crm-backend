@@ -69,9 +69,28 @@ export class UsersService {
 
   async updateRefreshToken(userId: string, refreshToken: string | null) {
     await this.prisma.user.update({
-      where: { id: userId }, // Указываем, какого пользователя обновить
-      data: { refreshToken }, // Передаём новые данные
+      where: { id: userId },
+      data: { refreshToken },
     });
+  }
+
+  async findOneById(id: string): Promise<UserDto> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return {
+      id: user.id,
+      name: user.name || '',
+      email: user.email,
+      role: user.role,
+      imgUrl: user.imgUrl || '',
+      createdAt: user.createdAt,
+    };
   }
 
   private mapToUserDto(user: User): UserDto {
