@@ -14,22 +14,38 @@ model Folder {
   ownerId        String     @default("admin-id-12345678")
   type           FolderType
   visibleToUsers User[]     @relation("FolderVisibility")
+  boards         Board[]    @relation("FolderBoards")
 }
 
 model User {
   id             String   @id @default(uuid())
   email          String   @unique
   password       String
-  role           String   @default("user") // admin / user
+  role           String   @default("user")
   createdAt      DateTime @default(now())
   refreshToken   String?
   name           String?
   imgUrl         String?
   foldersVisible Folder[] @relation("FolderVisibility")
+  boardsVisible  Board[]  @relation("BoardVisibility")
+  boardsOwned    Board[]  @relation("BoardOwner")
 }
 
 enum FolderType {
   private
   public
   shared
+}
+
+model Board {
+  id             String     @id @default(uuid())
+  name           String
+  type           FolderType
+  icon           String?
+  folderId       String?
+  folder         Folder?    @relation("FolderBoards", fields: [folderId], references: [id])
+  ownerId        String
+  owner          User       @relation("BoardOwner", fields: [ownerId], references: [id])
+  visibleToUsers User[]     @relation("BoardVisibility")
+  createdAt      DateTime   @default(now())
 }
