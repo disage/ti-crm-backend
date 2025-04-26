@@ -103,7 +103,7 @@ export class BoardService {
                   },
                 ],
               },
-          orderBy: { createdAt: 'asc' },
+          orderBy: { order: 'asc' },
         },
       },
     });
@@ -128,13 +128,54 @@ export class BoardService {
               ],
             }),
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { order: 'asc' },
     });
 
     return {
       folders,
       topLevelBoards,
     };
+  }
+  async updateBoardFolder(
+    boardId: string,
+    folderId: string | null,
+    newOrder: number,
+  ) {
+    const board = await this.prisma.board.findUnique({
+      where: { id: boardId },
+    });
+
+    if (!board) throw new Error('Board not found');
+
+    // get all boards in the same folder (or in the root), excluding the current one
+    const siblingBoards = await this.prisma.board.findMany({
+      where: {
+        folderId,
+        id: { not: boardId },
+      },
+      orderBy: { order: 'asc' },
+    });
+
+    // Insert the current board into the desired position and recalculate the order
+    const updatedBoards = [
+      ...siblingBoards.slice(0, newOrder),
+      board,
+      ...siblingBoards.slice(newOrder),
+    ];
+
+    await Promise.all(
+      updatedBoards.map((b, index) =>
+        this.prisma.board.update({
+          where: { id: b.id },
+          data: {
+            order: index,
+            ...(b.id === boardId ? { folderId } : {}), // update folderId only for the board being moved
+          },
+        }),
+      ),
+    );
+
+    return { success: true };
   }
 
   async updateFolder(id: string, dto: UpdateFolderDto) {
@@ -143,24 +184,33 @@ export class BoardService {
     return this.prisma.folder.update({
       where: { id },
       data: {
-        name,
-        order,
+        ...(name !== undefined && { name }),
+        ...(order !== undefined && { order }),
         type,
         visibleToUsers:
           type === FolderType.shared
             ? {
                 set: visibleToUserIds?.map((id) => ({ id })) || [],
               }
-            : { set: [] }, // clean if not shared
+            : { set: [] }, // clear, if not shared
       },
     });
   }
 
-  async delete(id: string) {
+  async deleteBoard(id: string) {
     return this.prisma.board.delete({ where: { id } });
   }
 
   async deleteFolder(id: string) {
-    return this.prisma.folder.delete({ where: { id } });
+    await this.prisma.board.deleteMany({
+      where: {
+        folderId: id,
+      },
+    });
+    return this.prisma.folder.delete({
+      where: {
+        id,
+      },
+    });
   }
 }

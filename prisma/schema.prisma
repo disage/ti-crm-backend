@@ -48,4 +48,5 @@ model Board {
   owner          User       @relation("BoardOwner", fields: [ownerId], references: [id])
   visibleToUsers User[]     @relation("BoardVisibility")
   createdAt      DateTime   @default(now())
+  order          Int        @default(0)
 }

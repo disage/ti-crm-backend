@@ -47,10 +47,19 @@ export class BoardController {
     return this.boardService.updateFolder(id, dto);
   }
 
+  @Patch('move/:id')
+  @UseGuards(JwtAuthGuard)
+  updateBoardFolder(
+    @Param('id') id: string,
+    @Body() dto: { folderId: string | null; order: number },
+  ) {
+    return this.boardService.updateBoardFolder(id, dto.folderId, dto.order);
+  }
+
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
-  remove(@Param('id') id: string) {
-    return this.boardService.delete(id);
+  removeBoard(@Param('id') id: string) {
+    return this.boardService.deleteBoard(id);
   }
 
   @Delete('folder/:id')

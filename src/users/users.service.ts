@@ -66,12 +66,24 @@ export class UsersService {
       where: { id: userId },
     });
   }
-
   async updateRefreshToken(userId: string, refreshToken: string | null) {
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { refreshToken },
-    });
+    console.log(
+      `Updating refresh token for userId: ${userId}, new refreshToken: ${refreshToken}`,
+    );
+
+    try {
+      const updatedUser = await this.prisma.user.update({
+        where: { id: userId },
+        data: { refreshToken },
+      });
+      console.log(`Successfully updated user: ${updatedUser.id}`);
+    } catch (error) {
+      console.error(
+        `Failed to update refresh token for userId: ${userId}`,
+        error,
+      );
+      throw new Error('Could not update refresh token');
+    }
   }
 
   async findOneById(id: string): Promise<UserDto> {

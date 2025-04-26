@@ -56,7 +56,7 @@ export class AuthController {
   async refresh(@Req() req: Request, @Res() res: Response) {
     const refreshToken = req.cookies['refreshToken'];
     if (!refreshToken) {
-      return res.status(401).json({ message: 'Необходим refresh токен' });
+      return res.status(401).json({ message: 'Requier refresh token' });
     }
 
     try {
@@ -71,7 +71,7 @@ export class AuthController {
 
       return res.json({ accessToken });
     } catch (err) {
-      return res.status(401).json({ message: 'Невалидный refresh токен' });
+      return res.status(401).json({ message: 'Not valid refresh token' });
     }
   }
 
