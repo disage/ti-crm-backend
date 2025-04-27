@@ -4,6 +4,7 @@ import { CreateFolderDto } from './dto/create-folder.dto';
 import { UpdateFolderDto } from './dto/update-folder.dto';
 import { CreateBoardDto } from './dto/сreate-board-dto';
 import { FolderType } from '@prisma/client';
+import { ColumnType } from '@prisma/client'; // обязательно импорт!
 
 @Injectable()
 export class BoardService {
@@ -47,16 +48,48 @@ export class BoardService {
       }
     }
 
-    return this.prisma.board.create({
-      data: {
-        name,
-        icon,
-        type,
-        folderId: folderId ?? null,
-        ownerId: userId,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Создаем сам борд
+      const board = await tx.board.create({
+        data: {
+          name,
+          icon,
+          type,
+          folderId: folderId ?? null,
+          ownerId: userId,
+        },
+      });
+
+      // 2. Создаем дефолтную колонку "Name"
+      const column = await tx.boardColumn.create({
+        data: {
+          boardId: board.id,
+          name: 'Name',
+          type: ColumnType.TEXT,
+          order: 0,
+        },
+      });
+
+      // 3. Создаем дефолтную строку
+      const row = await tx.boardRow.create({
+        data: {
+          boardId: board.id,
+        },
+      });
+
+      // 4. Создаем ячейку со значением "Alex"
+      await tx.boardCell.create({
+        data: {
+          rowId: row.id,
+          columnId: column.id,
+          value: 'Alex',
+        },
+      });
+
+      return board;
     });
   }
+
   async getAvailableFolders(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -136,6 +169,7 @@ export class BoardService {
       topLevelBoards,
     };
   }
+
   async updateBoardFolder(
     boardId: string,
     folderId: string | null,
@@ -198,7 +232,43 @@ export class BoardService {
   }
 
   async deleteBoard(id: string) {
-    return this.prisma.board.delete({ where: { id } });
+    const board = await this.prisma.board.findUnique({
+      where: { id },
+      include: {
+        rows: {
+          include: {
+            cells: true, // ячейки, связанные с каждой строкой
+          },
+        },
+        columns: true, // колонки, связанные с бордом
+      },
+    });
+
+    if (!board) {
+      throw new NotFoundException('Board not found');
+    }
+
+    // Удаление ячеек
+    for (const row of board.rows) {
+      await this.prisma.boardCell.deleteMany({
+        where: { rowId: row.id },
+      });
+    }
+
+    // Удаление строк
+    await this.prisma.boardRow.deleteMany({
+      where: { boardId: id },
+    });
+
+    // Удаление колонок
+    await this.prisma.boardColumn.deleteMany({
+      where: { boardId: id },
+    });
+
+    // Удаление самого борда
+    return this.prisma.board.delete({
+      where: { id },
+    });
   }
 
   async deleteFolder(id: string) {
@@ -212,5 +282,67 @@ export class BoardService {
         id,
       },
     });
+  }
+
+  async getBoardById(id: string) {
+    const board = await this.prisma.board.findUnique({
+      where: { id },
+      include: {
+        columns: {
+          orderBy: { order: 'asc' }, // Преобразуем порядок колонок
+        },
+        rows: {
+          include: {
+            cells: true, // Включаем ячейки для строк
+          },
+        },
+      },
+    });
+
+    if (!board) {
+      throw new NotFoundException('Board not found');
+    }
+
+    // Преобразуем колонки
+    const columns = board.columns.map((column) => ({
+      name: column.name,
+      type: this.mapColumnType(column.type), // Преобразуем тип
+      order: column.order,
+      settings: column.settings,
+    }));
+
+    // Преобразуем строки
+    const rows = board.rows.map((row) => {
+      const rowData = { id: row.id }; // Начинаем с id строки
+      row.cells.forEach((cell) => {
+        // Добавляем данные ячейки по колонке
+        const column = board.columns.find(
+          (column) => column.id === cell.columnId,
+        );
+        if (column) {
+          rowData[column.name] = cell.value;
+        }
+      });
+      return rowData;
+    });
+
+    return { ...board, columns, rows };
+  }
+
+  mapColumnType(type: ColumnType): 'text' | 'number' | 'select' | 'date' {
+    switch (type) {
+      case 'TEXT':
+        return 'text';
+      case 'NUMBER':
+      case 'CURRENCY':
+        return 'number';
+      case 'SINGLE_SELECT':
+      case 'MULTI_SELECT':
+        return 'select';
+      case 'DATE':
+        return 'date';
+      default:
+        return 'text'; // если вдруг тип не совпал с никаким из перечисленных
+    }
   }
 }

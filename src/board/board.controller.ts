@@ -8,7 +8,12 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 
 import { BoardService } from './board.service';
 import { CreateFolderDto } from './dto/create-folder.dto';
@@ -72,5 +77,15 @@ export class BoardController {
   @UseGuards(JwtAuthGuard)
   getAvailable(@CurrentUser() user: { userId: string }) {
     return this.boardService.getAvailableFolders(user.userId);
+  }
+
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Get board data',
+  })
+  @ApiResponse({ status: 200, description: 'Борд успешно получен.' })
+  async getBoard(@Param('id') id: string) {
+    return this.boardService.getBoardById(id);
   }
 }

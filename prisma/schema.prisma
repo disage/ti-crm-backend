@@ -31,22 +31,63 @@ model User {
   boardsOwned    Board[]  @relation("BoardOwner")
 }
 
+model Board {
+  id             String        @id @default(uuid())
+  name           String
+  type           FolderType
+  icon           String?
+  folderId       String?
+  folder         Folder?       @relation("FolderBoards", fields: [folderId], references: [id])
+  ownerId        String
+  owner          User          @relation("BoardOwner", fields: [ownerId], references: [id])
+  visibleToUsers User[]        @relation("BoardVisibility")
+  createdAt      DateTime      @default(now())
+  order          Int           @default(0)
+  columns        BoardColumn[]
+  rows           BoardRow[]
+}
+
+model BoardColumn {
+  id        String      @id @default(uuid())
+  boardId   String
+  board     Board       @relation(fields: [boardId], references: [id])
+  name      String
+  type      ColumnType
+  order     Int         @default(0)
+  settings  Json?
+  createdAt DateTime    @default(now())
+  cells     BoardCell[]
+}
+
+model BoardRow {
+  id        String      @id @default(uuid())
+  boardId   String
+  board     Board       @relation(fields: [boardId], references: [id])
+  createdAt DateTime    @default(now())
+  cells     BoardCell[]
+}
+
+model BoardCell {
+  id        String      @id @default(uuid())
+  rowId     String
+  row       BoardRow    @relation(fields: [rowId], references: [id])
+  columnId  String
+  column    BoardColumn @relation(fields: [columnId], references: [id])
+  value     Json?
+  createdAt DateTime    @default(now())
+}
+
 enum FolderType {
   private
   public
   shared
 }
 
-model Board {
-  id             String     @id @default(uuid())
-  name           String
-  type           FolderType
-  icon           String?
-  folderId       String?
-  folder         Folder?    @relation("FolderBoards", fields: [folderId], references: [id])
-  ownerId        String
-  owner          User       @relation("BoardOwner", fields: [ownerId], references: [id])
-  visibleToUsers User[]     @relation("BoardVisibility")
-  createdAt      DateTime   @default(now())
-  order          Int        @default(0)
+enum ColumnType {
+  TEXT
+  NUMBER
+  CURRENCY
+  SINGLE_SELECT
+  MULTI_SELECT
+  DATE
 }
