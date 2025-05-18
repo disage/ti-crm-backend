@@ -31,7 +31,7 @@ export class BoardColumnController {
   @ApiOperation({ summary: 'Create new column' })
   @ApiResponse({
     status: 201,
-    description: 'Колонка успешно создана.',
+    description: 'Column has been created successfully.',
   })
   async create(@Body() createBoardColumnDto: CreateBoardColumnDto) {
     // Преобразуем тело запроса в экземпляр класса DTO
@@ -55,7 +55,7 @@ export class BoardColumnController {
   @ApiOperation({ summary: 'Update column' })
   @ApiResponse({
     status: 200,
-    description: 'Колонка успешно обновлена.',
+    description: 'Column has been updated successfully',
   })
   update(
     @Param('id') id: string,
@@ -66,6 +66,11 @@ export class BoardColumnController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Delete column' })
+  @ApiResponse({
+    status: 200,
+    description: 'Column has been successfully removed',
+  })
   delete(@Param('id') id: string) {
     return this.boardColumnService.delete(id);
   }

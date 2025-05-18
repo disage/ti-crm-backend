@@ -7,29 +7,39 @@ export class BoardRowService {
   constructor(private prisma: PrismaService) {}
 
   async create(data: { boardId: string }) {
-    // Сначала создаем строку
     const row = await this.prisma.boardRow.create({ data });
 
-    // Находим все колонки у этого борда
     const columns = await this.prisma.boardColumn.findMany({
       where: { boardId: data.boardId },
     });
 
-    // Создаем пустые ячейки под каждую колонку
-    await this.prisma.boardCell.createMany({
-      data: columns.map((column) => ({
-        rowId: row.id,
-        columnId: column.id,
-        value: Prisma.JsonNull,
-      })),
-    });
+    const cells = await Promise.all(
+      columns.map((column) =>
+        this.prisma.boardCell.create({
+          data: {
+            rowId: row.id,
+            columnId: column.id,
+            value: Prisma.JsonNull,
+          },
+        }),
+      ),
+    );
 
-    return row;
+    return {
+      ...row,
+      cells,
+    };
   }
 
   async delete(id: string) {
-    return this.prisma.boardRow.delete({
-      where: { id },
+    return this.prisma.$transaction(async (prisma) => {
+      await prisma.boardCell.deleteMany({
+        where: { rowId: id },
+      });
+
+      return prisma.boardRow.delete({
+        where: { id },
+      });
     });
   }
 }

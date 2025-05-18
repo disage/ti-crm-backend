@@ -21,6 +21,7 @@ import { UpdateFolderDto } from './dto/update-folder.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { CreateBoardDto } from './dto/сreate-board-dto';
+import { UpdateBoardDto } from './dto/update-board.dto';
 
 @ApiTags('boards')
 @ApiBearerAuth()
@@ -44,6 +45,14 @@ export class BoardController {
     @Body() dto: CreateBoardDto,
   ) {
     return this.boardService.createBoard(dto, user.userId);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Update board' })
+  @ApiResponse({ status: 200, description: 'Board successfully updated.' })
+  updateBoard(@Param('id') id: string, @Body() dto: UpdateBoardDto) {
+    return this.boardService.updateBoard(id, dto);
   }
 
   @Patch('folder/:id')

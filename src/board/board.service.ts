@@ -5,6 +5,7 @@ import { UpdateFolderDto } from './dto/update-folder.dto';
 import { CreateBoardDto } from './dto/сreate-board-dto';
 import { FolderType } from '@prisma/client';
 import { ColumnType } from '@prisma/client'; // обязательно импорт!
+import { UpdateBoardDto } from './dto/update-board.dto';
 
 @Injectable()
 export class BoardService {
@@ -231,6 +232,13 @@ export class BoardService {
     });
   }
 
+  async updateBoard(id: string, dto: UpdateBoardDto) {
+    return this.prisma.board.update({
+      where: { id },
+      data: dto,
+    });
+  }
+
   async deleteBoard(id: string) {
     const board = await this.prisma.board.findUnique({
       where: { id },
@@ -289,60 +297,47 @@ export class BoardService {
       where: { id },
       include: {
         columns: {
-          orderBy: { order: 'asc' }, // Преобразуем порядок колонок
+          orderBy: { order: 'asc' },
         },
         rows: {
           include: {
-            cells: true, // Включаем ячейки для строк
+            cells: true,
           },
         },
       },
     });
-
     if (!board) {
       throw new NotFoundException('Board not found');
     }
-
-    // Преобразуем колонки
     const columns = board.columns.map((column) => ({
+      id: column.id,
       name: column.name,
-      type: this.mapColumnType(column.type), // Преобразуем тип
+      type: column.type,
       order: column.order,
       settings: column.settings,
     }));
 
-    // Преобразуем строки
     const rows = board.rows.map((row) => {
-      const rowData = { id: row.id }; // Начинаем с id строки
+      const rowData: any = { id: row.id };
+
       row.cells.forEach((cell) => {
-        // Добавляем данные ячейки по колонке
-        const column = board.columns.find(
-          (column) => column.id === cell.columnId,
-        );
+        const column = board.columns.find((col) => col.id === cell.columnId);
         if (column) {
-          rowData[column.name] = cell.value;
+          rowData[column.name] = {
+            value: cell.value,
+            cellId: cell.id,
+          };
         }
       });
+
       return rowData;
     });
 
-    return { ...board, columns, rows };
-  }
-
-  mapColumnType(type: ColumnType): 'text' | 'number' | 'select' | 'date' {
-    switch (type) {
-      case 'TEXT':
-        return 'text';
-      case 'NUMBER':
-      case 'CURRENCY':
-        return 'number';
-      case 'SINGLE_SELECT':
-      case 'MULTI_SELECT':
-        return 'select';
-      case 'DATE':
-        return 'date';
-      default:
-        return 'text'; // если вдруг тип не совпал с никаким из перечисленных
-    }
+    return {
+      id: board.id,
+      name: board.name,
+      columns,
+      rows,
+    };
   }
 }

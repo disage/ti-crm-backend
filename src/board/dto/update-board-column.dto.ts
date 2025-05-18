@@ -1,4 +1,5 @@
-import { IsOptional, IsString, IsInt, IsObject } from 'class-validator';
+import { ColumnType } from '@prisma/client';
+import { IsOptional, IsString, IsInt, IsObject, IsEnum } from 'class-validator';
 
 export class UpdateBoardColumnDto {
   @IsOptional()
@@ -12,4 +13,8 @@ export class UpdateBoardColumnDto {
   @IsOptional()
   @IsObject()
   settings?: object;
+
+  @IsOptional()
+  @IsEnum(ColumnType)
+  type?: ColumnType;
 }
